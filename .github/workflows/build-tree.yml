@@ -1,0 +1,32 @@
+# Example: drop this into YOUR profile repo at .github/workflows/build-tree.yml
+# It rebuilds the tree daily and commits the SVG so your README stays fresh.
+name: Build Christmas Tree
+
+on:
+  schedule:
+    - cron: "0 18 * * *" # daily at 18:00 UTC
+  workflow_dispatch: # let you run it manually from the Actions tab
+  push:
+    branches: [main]
+
+permissions:
+  contents: write
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Generate tree
+        uses: chromeheartz/merry-gitmas@v1
+        with:
+          github_token: ${{ secrets.GITHUB_TOKEN }}
+          theme: default
+          output: profile-tree.svg
+
+      - name: Commit the SVG
+        uses: stefanzweifel/git-auto-commit-action@v5
+        with:
+          commit_message: "chore: update christmas tree 🎄"
+          file_pattern: profile-tree.svg

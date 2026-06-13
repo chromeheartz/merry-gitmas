@@ -1,0 +1,19 @@
+{
+  "name": "merry-gitmas",
+  "version": "0.1.0",
+  "description": "Render a retro pixel-art christmas tree from your GitHub contributions",
+  "license": "MIT",
+  "type": "commonjs",
+  "scripts": {
+    "build": "tsc",
+    "package": "ncc build src/main.ts -o dist --source-map --license licenses.txt",
+    "dev": "ts-node src/main.ts",
+    "preview": "ts-node scripts/preview.ts"
+  },
+  "devDependencies": {
+    "@types/node": "^20.11.0",
+    "@vercel/ncc": "^0.38.1",
+    "ts-node": "^10.9.2",
+    "typescript": "^5.4.0"
+  }
+}

@@ -1,0 +1,26 @@
+name: "Merry Gitmas"
+description: "Render a retro pixel-art christmas tree decorated from your GitHub contributions this year."
+author: "chromeheartz"
+branding:
+  icon: "gift"
+  color: "green"
+
+inputs:
+  github_token:
+    description: "GitHub token used to read your contribution calendar. Use ${{ secrets.GITHUB_TOKEN }}."
+    required: true
+  username:
+    description: "GitHub username to render. Defaults to the repository owner."
+    required: false
+  output:
+    description: "Output SVG path, relative to the repo root."
+    required: false
+    default: "profile-tree.svg"
+  theme:
+    description: "Background theme: default (snowy night) or space (cosmos)."
+    required: false
+    default: "default"
+
+runs:
+  using: "node20"
+  main: "dist/index.js"

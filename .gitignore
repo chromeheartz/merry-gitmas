@@ -1,0 +1,8 @@
+node_modules/
+lib/
+preview.svg
+preview*.png
+*.log
+.DS_Store
+
+# NOTE: dist/ is intentionally committed — GitHub Actions runs dist/index.js.
