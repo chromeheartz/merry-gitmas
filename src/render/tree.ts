@@ -388,7 +388,11 @@ function scatterPositions(grid: Grid, rng: () => number, max: number): Pos[] {
 // main render
 // ---------------------------------------------------------------------------
 
-export function renderTree(stats: ContributionStats, themeName?: string): string {
+export function renderTree(
+  stats: ContributionStats,
+  themeName?: string,
+  displayWidth: number = 350
+): string {
   const theme = getTheme(themeName);
   const rng = mulberry32(hashStr(stats.username || "octocat"));
 
@@ -486,11 +490,14 @@ export function renderTree(stats: ContributionStats, themeName?: string): string
       ? `next: ${next.label} @ ${next.at}`
       : "✦ fully decorated";
   parts.push(`
-    <text x="20" y="34" font-family="'Press Start 2P', monospace" font-size="16" font-weight="700" fill="${C.text}">@${escapeXml(stats.username)}</text>
+    <text x="20" y="40" font-family="'Press Start 2P', monospace" font-size="21" font-weight="700" fill="${C.text}">@${escapeXml(stats.username)}</text>
     <text x="20" y="${H - 18}" font-family="monospace" font-size="14" fill="${C.textMuted}">★ ${stats.total} contributions in ${stats.year}  ·  ${escapeXml(status)}</text>
   `);
 
-  return `<svg xmlns="http://www.w3.org/2000/svg" width="${W}" height="${H}" viewBox="0 0 ${W} ${H}" style="shape-rendering:crispEdges" role="img" aria-label="${escapeXml(stats.username)}'s pixel christmas tree">${parts.join("")}</svg>`;
+  // intrinsic display size (default 350px wide); viewBox keeps the crisp art
+  const dw = Math.max(80, Math.round(displayWidth));
+  const dh = Math.round((dw * H) / W);
+  return `<svg xmlns="http://www.w3.org/2000/svg" width="${dw}" height="${dh}" viewBox="0 0 ${W} ${H}" style="shape-rendering:crispEdges" role="img" aria-label="${escapeXml(stats.username)}'s pixel christmas tree">${parts.join("")}</svg>`;
 }
 
 // ---------------------------------------------------------------------------

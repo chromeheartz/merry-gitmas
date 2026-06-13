@@ -170,10 +170,11 @@ async function main() {
     }
     const output = getInput("output", "profile-tree.svg");
     const theme = getInput("theme", "default");
+    const width = parseInt(getInput("width", "350"), 10) || 350;
     process.stdout.write(`Fetching contributions for @${username}…\n`);
     const stats = await (0, fetch_1.fetchStats)(username, token);
     process.stdout.write(`  total=${stats.total} maxDay=${stats.maxDay} longestStreak=${stats.longestStreak}\n`);
-    const svg = (0, tree_1.renderTree)(stats, theme);
+    const svg = (0, tree_1.renderTree)(stats, theme, width);
     const outPath = path.resolve(process.cwd(), output);
     await fs_1.promises.mkdir(path.dirname(outPath), { recursive: true });
     await fs_1.promises.writeFile(outPath, svg, "utf8");
@@ -700,7 +701,7 @@ function scatterPositions(grid, rng, max) {
 // ---------------------------------------------------------------------------
 // main render
 // ---------------------------------------------------------------------------
-function renderTree(stats, themeName) {
+function renderTree(stats, themeName, displayWidth = 350) {
     const theme = (0, themes_1.getTheme)(themeName);
     const rng = mulberry32(hashStr(stats.username || "octocat"));
     const grid = new Grid();
@@ -786,10 +787,13 @@ function renderTree(stats, themeName) {
             ? `next: ${next.label} @ ${next.at}`
             : "✦ fully decorated";
     parts.push(`
-    <text x="20" y="34" font-family="'Press Start 2P', monospace" font-size="16" font-weight="700" fill="${palette_1.palette.text}">@${escapeXml(stats.username)}</text>
+    <text x="20" y="40" font-family="'Press Start 2P', monospace" font-size="21" font-weight="700" fill="${palette_1.palette.text}">@${escapeXml(stats.username)}</text>
     <text x="20" y="${H - 18}" font-family="monospace" font-size="14" fill="${palette_1.palette.textMuted}">★ ${stats.total} contributions in ${stats.year}  ·  ${escapeXml(status)}</text>
   `);
-    return `<svg xmlns="http://www.w3.org/2000/svg" width="${W}" height="${H}" viewBox="0 0 ${W} ${H}" style="shape-rendering:crispEdges" role="img" aria-label="${escapeXml(stats.username)}'s pixel christmas tree">${parts.join("")}</svg>`;
+    // intrinsic display size (default 350px wide); viewBox keeps the crisp art
+    const dw = Math.max(80, Math.round(displayWidth));
+    const dh = Math.round((dw * H) / W);
+    return `<svg xmlns="http://www.w3.org/2000/svg" width="${dw}" height="${dh}" viewBox="0 0 ${W} ${H}" style="shape-rendering:crispEdges" role="img" aria-label="${escapeXml(stats.username)}'s pixel christmas tree">${parts.join("")}</svg>`;
 }
 // ---------------------------------------------------------------------------
 // extra sprites

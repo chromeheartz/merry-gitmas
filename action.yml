@@ -20,6 +20,10 @@ inputs:
     description: "Background theme: default (snowy night) or space (cosmos)."
     required: false
     default: "default"
+  width:
+    description: "Rendered image width in px (height auto from aspect ratio)."
+    required: false
+    default: "350"
 
 runs:
   using: "node20"

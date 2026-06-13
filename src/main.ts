@@ -38,6 +38,7 @@ async function main(): Promise<void> {
 
   const output = getInput("output", "profile-tree.svg");
   const theme = getInput("theme", "default");
+  const width = parseInt(getInput("width", "350"), 10) || 350;
 
   process.stdout.write(`Fetching contributions for @${username}…\n`);
   const stats = await fetchStats(username, token);
@@ -45,7 +46,7 @@ async function main(): Promise<void> {
     `  total=${stats.total} maxDay=${stats.maxDay} longestStreak=${stats.longestStreak}\n`
   );
 
-  const svg = renderTree(stats, theme);
+  const svg = renderTree(stats, theme, width);
   const outPath = path.resolve(process.cwd(), output);
   await fs.mkdir(path.dirname(outPath), { recursive: true });
   await fs.writeFile(outPath, svg, "utf8");

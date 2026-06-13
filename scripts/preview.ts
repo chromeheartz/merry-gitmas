@@ -20,7 +20,8 @@ const stats: ContributionStats = {
 };
 
 const theme = process.env.THEME || "default";
+const width = Number(process.env.WIDTH ?? 640); // bigger by default for local viewing
 
-fs.writeFile("preview.svg", renderTree(stats, theme), "utf8").then(() =>
-  process.stdout.write(`Wrote preview.svg (theme: ${theme}) — open it in a browser.\n`)
+fs.writeFile("preview.svg", renderTree(stats, theme, width), "utf8").then(() =>
+  process.stdout.write(`Wrote preview.svg (theme: ${theme}, width: ${width}) — open it in a browser.\n`)
 );
