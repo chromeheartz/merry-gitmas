@@ -7,7 +7,7 @@ branding:
 
 inputs:
   github_token:
-    description: "GitHub token used to read your contribution calendar. Use ${{ secrets.GITHUB_TOKEN }}."
+    description: "GitHub token used to read your contribution calendar. Pass secrets.GITHUB_TOKEN from your workflow."
     required: true
   username:
     description: "GitHub username to render. Defaults to the repository owner."
