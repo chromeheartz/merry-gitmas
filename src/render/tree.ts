@@ -450,16 +450,24 @@ export function renderTree(
   // ---- ambient (nebula etc.), behind the stars ----
   if (theme.ambient) parts.push(theme.ambient(W, H));
 
-  // ---- twinkling stars (deterministic) ----
+  // ---- star dots (optionally twinkling) ----
   let sky = "";
   for (let i = 0; i < theme.starCount; i++) {
     const x = Math.floor(rng() * W);
-    const y = Math.floor(rng() * H * 0.6);
-    const s = rng() > 0.85 ? PX : PX / 2;
+    // cover the whole sky (down to just above the snowy ground), not just the top
+    const y = Math.floor(rng() * (GROUND_ROW * PX - 16));
+    const s = Math.round((rng() > 0.85 ? PX : PX / 2) * 1.7);
     const col = theme.starPalette
       ? theme.starPalette[Math.floor(rng() * theme.starPalette.length)]
       : theme.starColor;
-    sky += `<rect x="${x}" y="${y}" width="${s}" height="${s}" fill="${col}" opacity="${0.5 + rng() * 0.5}"/>`;
+    const op = (0.5 + rng() * 0.5).toFixed(2);
+    if (theme.twinkle) {
+      const dur = (1.4 + rng() * 2.4).toFixed(2);
+      const begin = (rng() * 3).toFixed(2);
+      sky += `<rect x="${x}" y="${y}" width="${s}" height="${s}" fill="${col}"><animate attributeName="opacity" values="${op};0.1;${op}" dur="${dur}s" begin="${begin}s" repeatCount="indefinite"/></rect>`;
+    } else {
+      sky += `<rect x="${x}" y="${y}" width="${s}" height="${s}" fill="${col}" opacity="${op}"/>`;
+    }
   }
   parts.push(`<g shape-rendering="crispEdges">${sky}</g>`);
 
@@ -491,16 +499,32 @@ export function renderTree(
   }
   parts.push(`<g shape-rendering="crispEdges">${orns}</g>`);
 
-  // ---- crown star (왕별): only once this year hits CROWN_AT ----
+  // ---- crown star (왕별): only once this year hits CROWN_AT — and it twinkles ----
   if (crown) {
     const sx = CX * PX;
     const sy = 5 * PX;
-    parts.push(`<circle cx="${sx}" cy="${sy}" r="${PX * 4}" fill="url(#orb)"/>`);
+    // pulsing glow halo
+    parts.push(`<circle cx="${sx}" cy="${sy}" r="${PX * 4}" fill="url(#orb)">
+      <animate attributeName="opacity" values="0.45;1;0.45" dur="1.8s" repeatCount="indefinite"/>
+      <animate attributeName="r" values="${PX * 3.2};${PX * 4.8};${PX * 3.2}" dur="1.8s" repeatCount="indefinite"/>
+    </circle>`);
     parts.push(`<g shape-rendering="crispEdges">${blitSprite(crownStar(), CX - 5, 0)}</g>`);
+    // sparkle burst (a small cross that scales + fades over the star)
+    parts.push(`<g transform="translate(${sx} ${sy})">
+      <g opacity="0">
+        <rect x="-1.5" y="-15" width="3" height="30" fill="#fff6c9"/>
+        <rect x="-15" y="-1.5" width="30" height="3" fill="#fff6c9"/>
+        <animate attributeName="opacity" values="0;0.95;0" dur="2.2s" repeatCount="indefinite"/>
+        <animateTransform attributeName="transform" type="scale" values="0.3;1.1;0.3" dur="2.2s" repeatCount="indefinite"/>
+      </g>
+    </g>`);
   }
 
   // ---- small snowman standing on the ground, clear of the tree ----
   parts.push(`<g shape-rendering="crispEdges">${snowman(COLS - 6, GROUND_ROW - 7)}</g>`);
+
+  // ---- foreground (e.g. falling snow), in front of the tree, behind the text ----
+  if (theme.foreground) parts.push(theme.foreground(W, H));
 
   // ---- text ----
   const next = nextUnlock(stats.total);
@@ -510,14 +534,15 @@ export function renderTree(
       ? `next: ${next.label} @ ${next.at}`
       : "✦ fully decorated";
   parts.push(`
-    <text x="20" y="40" font-family="'Press Start 2P', monospace" font-size="21" font-weight="700" fill="${C.text}">@${escapeXml(stats.username)}</text>
-    <text x="20" y="${H - 18}" font-family="monospace" font-size="14" fill="${C.textMuted}">★ ${stats.total} contributions in ${stats.year}  ·  ${escapeXml(status)}</text>
+    <text x="20" y="40" font-family="'Press Start 2P', monospace" font-size="21" font-weight="700" fill="${theme.text ?? C.text}">@${escapeXml(stats.username)}</text>
+    <text x="20" y="${H - 18}" font-family="monospace" font-size="14" fill="${theme.textMuted ?? C.textMuted}">★ ${stats.total} contributions in ${stats.year}  ·  ${escapeXml(status)}</text>
   `);
 
-  // intrinsic display size (default 350px wide); viewBox keeps the crisp art
+  // intrinsic display size (default 350px wide); viewBox keeps the crisp art.
+  // Everything is clipped to the frame so backgrounds never spill past the edges.
   const dw = Math.max(80, Math.round(displayWidth));
   const dh = Math.round((dw * H) / W);
-  return `<svg xmlns="http://www.w3.org/2000/svg" width="${dw}" height="${dh}" viewBox="0 0 ${W} ${H}" style="shape-rendering:crispEdges" role="img" aria-label="${escapeXml(stats.username)}'s pixel christmas tree">${parts.join("")}</svg>`;
+  return `<svg xmlns="http://www.w3.org/2000/svg" width="${dw}" height="${dh}" viewBox="0 0 ${W} ${H}" style="shape-rendering:crispEdges" role="img" aria-label="${escapeXml(stats.username)}'s pixel christmas tree"><defs><clipPath id="frame"><rect x="0" y="0" width="${W}" height="${H}"/></clipPath></defs><g clip-path="url(#frame)">${parts.join("")}</g></svg>`;
 }
 
 // ---------------------------------------------------------------------------

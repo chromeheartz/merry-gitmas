@@ -17,7 +17,7 @@ inputs:
     required: false
     default: "profile-tree.svg"
   theme:
-    description: "Background theme: default (snowy night) or space (cosmos)."
+    description: "Background theme: default (night), space (cosmos), winter (snowy mountains), sky (clouds). Backgrounds are animated."
     required: false
     default: "default"
   width:

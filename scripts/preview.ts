@@ -11,7 +11,7 @@ import { renderTree } from "../src/render/tree";
 import { ContributionStats } from "../src/github/fetch";
 
 const stats: ContributionStats = {
-  username: process.env.USERNAME || "octocat",
+  username: process.env.USERNAME || "chromeheartz",
   year: Number(process.env.YEAR ?? new Date().getUTCFullYear()),
   total: Number(process.env.TOTAL ?? 320),
   maxDay: Number(process.env.MAXDAY ?? 12),
