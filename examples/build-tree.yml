@@ -1,11 +1,20 @@
-# Example: drop this into YOUR profile repo at .github/workflows/build-tree.yml
-# It rebuilds the tree daily and commits the SVG so your README stays fresh.
+# Copy this into YOUR profile repo at .github/workflows/build-tree.yml
+# (the repo named exactly like your username, e.g. chromeheartz/chromeheartz)
+#
+# It rebuilds the tree daily and commits the SVG so your profile README stays fresh.
+# The `theme` choice input shows a dropdown on the Actions → "Run workflow" button.
 name: Build Christmas Tree
 
 on:
   schedule:
     - cron: "0 18 * * *" # daily at 18:00 UTC
-  workflow_dispatch: # let you run it manually from the Actions tab
+  workflow_dispatch:
+    inputs:
+      theme:
+        description: "Background theme"
+        type: choice
+        default: default
+        options: [default, space, winter, sky]
   push:
     branches: [main]
 
@@ -22,7 +31,8 @@ jobs:
         uses: chromeheartz/merry-gitmas@v1
         with:
           github_token: ${{ secrets.GITHUB_TOKEN }}
-          theme: default
+          theme: ${{ inputs.theme || 'default' }}
+          width: 350
           output: profile-tree.svg
 
       - name: Commit the SVG

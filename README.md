@@ -50,6 +50,7 @@ GitHub Action (매일 cron)
 ### 2. 워크플로우 추가
 
 프로필 레포에 `.github/workflows/build-tree.yml` 파일을 만들고 아래를 붙여넣습니다.
+(`theme` 을 choice 입력으로 두면 **Actions → Run workflow** 에서 테마를 드롭다운으로 고를 수 있습니다.)
 
 ```yaml
 name: Build Christmas Tree
@@ -57,7 +58,13 @@ name: Build Christmas Tree
 on:
   schedule:
     - cron: "0 18 * * *"   # 매일 1회 (UTC 18시)
-  workflow_dispatch:        # Actions 탭에서 수동 실행
+  workflow_dispatch:        # Actions 탭에서 수동 실행 (테마 드롭다운)
+    inputs:
+      theme:
+        description: "Background theme"
+        type: choice
+        default: default
+        options: [default, space, winter, sky]
   push:
     branches: [main]
 
@@ -74,8 +81,8 @@ jobs:
         uses: chromeheartz/merry-gitmas@v1
         with:
           github_token: ${{ secrets.GITHUB_TOKEN }}
-          theme: default          # default | space
-          width: 350              # 이미지 가로 px (기본 350)
+          theme: ${{ inputs.theme || 'default' }}   # default | space | winter | sky
+          width: 350                                 # 이미지 가로 px (기본 350)
           output: profile-tree.svg
 
       - name: Commit SVG
