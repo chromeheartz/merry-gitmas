@@ -455,26 +455,40 @@ function cellNoise(c, r) {
     const x = Math.sin(c * 12.9898 + r * 78.233) * 43758.5453;
     return x - Math.floor(x);
 }
-function rasterTree(grid, rng) {
+/**
+ * Per-column downward droop of a tier's branch edge, so each layer ends in a
+ * wavy row of drooping branch tips instead of a ruler-straight line.
+ * Deterministic (depends only on column + tier) — no rng, so it never shifts
+ * ornaments or snow.
+ */
+function branchDroop(c, tierIdx) {
+    const x = c + tierIdx * 5;
+    const w = Math.sin(x * 0.8) * 0.6 + Math.sin(x * 1.7 + 2) * 0.4;
+    return Math.round((w * 0.5 + 0.5) * 4); // 0..4 rows
+}
+function rasterTree(grid, rng, snowFactor) {
     // foliage tiers (classic cone), top drawn last so upper layers overlap lower
     for (let i = TIERS.length - 1; i >= 0; i--) {
         const t = TIERS[i];
-        for (let r = t.apex; r <= t.base; r++) {
-            const hw = halfWidthAt(t, r);
+        const DROOP_MAX = 4;
+        for (let r = t.apex; r <= t.base + DROOP_MAX; r++) {
+            const hw = r <= t.base ? halfWidthAt(t, r) : t.half;
             if (hw < 0)
                 continue;
             for (let c = CX - hw; c <= CX + hw; c++) {
+                // each column droops a wavy amount → tier ends in drooping tips, not a line
+                const bottom = t.base + branchDroop(c, i);
+                if (r > bottom)
+                    continue; // carve the scalloped underside
                 const edge = Math.abs(c - CX) / (hw + 1);
                 let col = palette_1.palette.leafMid;
                 if (edge > 0.72)
                     col = palette_1.palette.leafLo; // darker toward the edges
-                if (r >= t.base - 1)
-                    col = palette_1.palette.leafShadow; // branch separation line
                 else if (edge < 0.3 && r < t.apex + (t.base - t.apex) * 0.5)
                     col = palette_1.palette.leafHi;
                 // pixel speckle texture so the green isn't flat (the "dot" feel)
                 const n = cellNoise(c, r);
-                if (r < t.base - 1) {
+                if (r < bottom - 1) {
                     if (n > 0.86)
                         col = palette_1.palette.leafHi;
                     else if (n < 0.14)
@@ -482,25 +496,26 @@ function rasterTree(grid, rng) {
                     else if (n > 0.6 && col === palette_1.palette.leafMid)
                         col = palette_1.palette.leafLo; // sparse darker dabs
                 }
+                // wavy shaded underside that follows each branch tip (no flat line)
+                if (r >= bottom - 1)
+                    col = r === bottom ? palette_1.palette.leafShadow : palette_1.palette.leafLo;
                 grid.set(c, r, col);
             }
-            // jagged branch tips along the bottom edge of each tier
-            if (r === t.base) {
-                for (let c = CX - hw; c <= CX + hw; c += 2) {
-                    if (rng() > 0.45)
-                        grid.set(c, r + 1, palette_1.palette.leafShadow);
-                }
-            }
         }
-        // heavy snow: drape rounded white humps across each branch layer
+        // snow: rounded white humps that ACCUMULATE with contributions.
+        // Each hump slot gets a fixed `appear` threshold; it shows once snowFactor
+        // crosses it, so snow only ever grows (never relocates). rng is consumed
+        // the same way regardless of total, so ornament positions stay stable.
         for (let row = t.apex + 1; row <= t.base - 1; row += 3) {
             const hw = halfWidthAt(t, row);
             if (hw < 2)
                 continue;
             let c = CX - hw;
             while (c <= CX + hw) {
-                if (rng() < 0.55) {
-                    const w = 3 + Math.floor(rng() * 6);
+                const appear = rng();
+                const w = 3 + Math.floor(rng() * 6);
+                const adv = w + 2 + Math.floor(rng() * 3);
+                if (appear < 0.7 * snowFactor) {
                     const mid = c + w / 2;
                     for (let dc = 0; dc <= w; dc++) {
                         const cc = c + dc;
@@ -513,20 +528,20 @@ function rasterTree(grid, rng) {
                             grid.set(cc, row - u, palette_1.palette.snow);
                         grid.set(cc, row + 1, palette_1.palette.snowShade);
                     }
-                    c += w + 2 + Math.floor(rng() * 3);
                 }
-                else {
-                    c += 2 + Math.floor(rng() * 3);
-                }
+                c += adv;
             }
         }
     }
     // crisp dark outline + underside shadow → GBA cel-shaded edge (the dot feel)
     outlineFoliage(grid);
-    // crisp white cap on the very top
-    for (let r = TIERS[0].apex; r <= TIERS[0].apex + 2; r++) {
-        for (let c = CX - 1; c <= CX + 1; c++)
-            grid.set(c, r, palette_1.palette.snow);
+    // top dusting grows with snow (1→3 rows). bare tree starts with none.
+    if (snowFactor > 0.05) {
+        const capRows = 1 + Math.round(Math.min(1, snowFactor) * 2);
+        for (let r = TIERS[0].apex; r < TIERS[0].apex + capRows; r++) {
+            for (let c = CX - 1; c <= CX + 1; c++)
+                grid.set(c, r, palette_1.palette.snow);
+        }
     }
     // trunk (with outline)
     for (let r = TRUNK_TOP; r <= TRUNK_BOT; r++) {
@@ -704,9 +719,11 @@ function scatterPositions(grid, rng, max) {
 function renderTree(stats, themeName, displayWidth = 350) {
     const theme = (0, themes_1.getTheme)(themeName);
     const rng = mulberry32(hashStr(stats.username || "octocat"));
+    // snow accumulates with contributions, reaching full around CROWN_AT
+    const snowFactor = Math.min(1, stats.total / CROWN_AT);
     const grid = new Grid();
     rasterGround(grid, rng);
-    rasterTree(grid, rng);
+    rasterTree(grid, rng, snowFactor);
     // positions are stable per user; the unlock schedule decides how many show
     const pool = scatterPositions(grid, rng, MAX_ORN);
     const kinds = unlockedKinds(stats.total);
